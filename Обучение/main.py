@@ -1,5 +1,2 @@
-import Tkinter
+import PyQt5
 
-
-window = Tk()
-window
