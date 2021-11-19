@@ -1,22 +1,46 @@
+none = ('xx', 'хх', 'ХХ', 'XX', '__', '--', '_', '//', '/')
+n = 10
+
+
 class Better:
-    def __init__(self, name: str, goals_=0):
+    def __init__(self, name: str, flags=None, goals=0):
+        """
+        Конструктор класса игроков
+
+        :param name: название команды игрока
+        :param flags: список флагов (сокращённых названий команды)
+        :param goals: количество голов, забитых игроком
+        """
         self.name = name
-        self.goals = goals_
-        self.flags = []
+        self.goals = goals
+        if flags is None:
+            self.flags = []
+        else:
+            self.flags = flags
 
     def find(self, name):
+        """
+        Определяет, соответствует ли строка name названию команды игрока или одному из её флагов (сокращённых названиц)
+        """
         return True if self.name == name or name in self.flags else False
 
-    def get_flags(self, flags_: list):
-        for j in flags_:
-            self.flags.append(j)
-
     def set_goals(self, value):
+        """
+        Изменяет количество голов игрока на заданное параметром value
+        """
         self.goals = value
 
 
 def check_bet(bet1, bet2, score1, score2):
-    if score[i] == bets[i]:
+    """
+    Определяет и возвращает количество голов, забитых на конкретной ставке
+
+    :param bet1: инд. тотал 1 команды в ставке
+    :param bet2: инд. тотал 2 команды в ставке
+    :param score1: реальный  инд. тотал 1 команды
+    :param score2: реальный инд. тотал 2 команды
+    """
+    if (bet1 == score1) and (bet2 == score2):
         return 2
     elif (bet1 < bet2) and (score1 < score2):
         return 1
@@ -29,74 +53,126 @@ def check_bet(bet1, bet2, score1, score2):
 
 
 def split(string: str, sep: str):
-    array_ = string.split(sep)
-    for j in range(len(array_)):
-        array_[j] = array_[j].replace('\n', '')
-    return array_
+    """
+    Разделяет строку на список по данной разделительной строке, удаляет символы перехода на новую строку
+
+    :param string: строка, которую необходимо разделить
+    :param sep: разделительная строка
+    :return: список строк
+    """
+    array = string.split(sep)
+    for j, elem in enumerate(array):
+        array[j] = elem.replace('\n', '')
+    return array
+
+
+def get_flags(file):
+    """
+    Считывает названия и флаги команд из файла, создаёт список объектов класса Better с этими данными
+
+    :param file: путь к файлу
+    :return: список объектов класса Better
+    """
+    array = []
+    text = file.readlines()
+    for line in text:
+        a = split(line, ' - ')
+        flag_array = split(a[1], ', ')
+        b = Better(a[0], flag_array)
+        array.append(b)
+    return array
+
+
+def get_scores(line):
+    """
+    Создаёт и возвращает список счетов матчей из данной строки
+    (в строке счета матчей должны быть представлены двузначными числами, разделёнными пробелом)
+    """
+    score_list = split(line, ' ')
+    scores = ['None'] * n
+    for i, elem in enumerate(score_list):
+        if elem not in none:
+            scores[i] = elem
+    return scores
+
+
+def get_goals(bets_list, scores_list, betters_list):
+    """
+    Рассчитывает количество забитых игроком голов
+
+    :param bets_list: список ставок игрока
+    (в строке ставки должны быть представлены двузначными числами, разделёнными пробелом)
+    :param scores_list: список счетов матчей
+    :param betters_list: список игроков (объектов класса Better)
+    """
+    goals = 0
+    team = bets_list[0]
+    bets = ['None'] * n
+    for i in range(len(bets_list) - 1):
+        if bets_list[i + 1] in none:
+            bets[i] = 'None'
+        else:
+            bets[i] = bets_list[i + 1]
+    for i, bet in enumerate(bets):
+        if bet != 'None' and scores_list[i] != 'None':
+            goals += check_bet(int(bet[0]), int(bet[1]), int(scores_list[i][0]), int(scores_list[i][1]))
+    for i in betters_list:
+        if i.find(team):
+            i.set_goals(goals)
+
+
+def get_matches(line, output_file, betters_list):
+    """
+    Считывает матч из строки расписания и выводит его счёт в файл вывода
+
+    :param line: строка с матчем из расписания
+    :param output_file: путь к файлу вывода
+    :param betters_list: список игроков (объектов класса Better)
+    """
+    array = split(line, ' - ')
+    g = [0] * 2
+    name = [''] * 2
+    for i in betters_list:
+        for k in range(2):
+            if i.find(array[k]):
+                g[k] = i.goals
+                name[k] = i.name
+    for k in range(2):
+        if name[k] == '':
+            print_name_error(array[k], output_file)
+    else:
+        print(name[0], f'{g[0]}-{g[1]}', name[1], file=output_file)
 
 
 def print_name_error(text: str, file):
+    """
+    Выводит сообщение об ошибке в имени в файл и в консоль
+
+    :param text: имя (строка)
+    :param file: путь к файлу вывода
+    """
     print('Undefined name:', text, file=file)
     print('Undefined name:', text)
 
 
-n = 10
-betters = []
-score = [''] * 10
-scores = []
-none = ('xx', 'хх', '__', '--', '_', '//', '/')
+def main():
+    with open('flags.txt', 'r') as flags:
+        betters = get_flags(flags)
 
-with open('flags.txt', 'r') as flags:
-    c = flags.readlines()
-    for line in c:
-        a = split(line, ' - ')
-        flag_array = split(a[1], ', ')
-        b = Better(a[0])
-        b.get_flags(flag_array)
-        betters.append(b)
+    with open('output.txt', 'w+') as output:
+        with open('bets.txt', 'r') as bets:
+            text = bets.readlines()
+            for j, line in enumerate(text):
+                if j == 0:
+                    score = get_scores(line)
+                else:
+                    input_array = split(line, ' ')
+                    get_goals(input_array, score, betters)
+        with open('matches.txt', 'r') as matches:
+            text = matches.readlines()
+            for line in text:
+                get_matches(line, output, betters)
 
-with open('output.txt', 'w+') as output:
-    with open('inputs.txt', 'r') as bets:
-        c = bets.readlines()
-        for line in range(len(c)):
-            array = split(c[line], ' ')
-            if line == 0:
-                for i in range(0, n, 1):
-                    score[i] = array[i]
-            else:
-                goals = 0
-                team = array[0]
-                bets = [''] * 10
-                for i in range(1, n+1, 1):
-                    if array[i] in none:
-                        bets[i-1] = 'None'
-                    else:
-                        bets[i-1] = array[i]
 
-                for i in range(len(bets)):
-                    if bets[i] != 'None':
-                        goals += check_bet(int(bets[i][0]), int(bets[i][1]), int(score[i][0]), int(score[i][1]))
-                scores.append(team + ' ' + str(goals))
-                for i in betters:
-                    if i.find(team):
-                        i.set_goals(goals)
-
-    with open('matches.txt', 'r') as matches:
-        c = matches.readlines()
-        for line in c:
-            array = split(line, ' - ')
-            (g1, g2) = (0, 0)
-            (name1, name2) = ('', '')
-            for i in betters:
-                if i.find(array[0]):
-                    g1 = i.goals
-                    name1 = i.name
-                if i.find(array[1]):
-                    g2 = i.goals
-                    name2 = i.name
-            if name1 == '':
-                print_name_error(array[0], output)
-            elif name2 == '':
-                print_name_error(array[1], output)
-            else:
-                print(name1, str(g1) + '-' + str(g2), name2, file=output)
+if __name__ == '__main__':
+    main()
