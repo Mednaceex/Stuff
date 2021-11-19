@@ -37,7 +37,7 @@ def check_bet(bet1, bet2, score1, score2):
 
     :param bet1: инд. тотал 1 команды в ставке
     :param bet2: инд. тотал 2 команды в ставке
-    :param score1: реальный  инд. тотал 1 команды
+    :param score1: реальный инд. тотал 1 команды
     :param score2: реальный инд. тотал 2 команды
     """
     if (bet1 == score1) and (bet2 == score2):
@@ -101,7 +101,6 @@ def get_goals(bets_list, scores_list, betters_list):
     Рассчитывает количество забитых игроком голов
 
     :param bets_list: список ставок игрока
-    (в строке ставки должны быть представлены двузначными числами, разделёнными пробелом)
     :param scores_list: список счетов матчей
     :param betters_list: список игроков (объектов класса Better)
     """
