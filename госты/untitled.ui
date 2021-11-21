@@ -21,9 +21,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
+      <y>50</y>
       <width>1191</width>
-      <height>761</height>
+      <height>721</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -35,7 +35,7 @@
     <widget class="QWidget" name="scrollAreaWidgetContents_82">
      <property name="geometry">
       <rect>
-       <x>-65</x>
+       <x>-31</x>
        <y>0</y>
        <width>1235</width>
        <height>2731</height>
@@ -6485,6 +6485,32 @@
       <widget class="QPushButton" name="Reset_Button">
        <property name="text">
         <string>Очистить</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="verticalLayoutWidget_22">
+    <property name="geometry">
+     <rect>
+      <x>270</x>
+      <y>10</y>
+      <width>647</width>
+      <height>41</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="Button_Layout_2">
+     <item>
+      <widget class="QPushButton" name="Matches_Button">
+       <property name="text">
+        <string>Настроить матчи</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="Flags_Button">
+       <property name="text">
+        <string>Настроить флаги</string>
        </property>
       </widget>
      </item>

@@ -249,6 +249,8 @@ class Window(QtWidgets.QMainWindow):
         self.set_names(get_names(self.betters))
         self.open_saves()
 
+        self.ui.Matches_Button.clicked.connect(self.config_matches)
+        self.ui.Flags_Button.clicked.connect(self.config_flags)
         self.ui.Save_Button.clicked.connect(self.save)
         self.ui.Count_Button.clicked.connect(self.count)
         self.ui.Reset_Button.clicked.connect(self.clear)
@@ -286,6 +288,12 @@ class Window(QtWidgets.QMainWindow):
         self.clear_scores()
         for bet_text in self.bet_texts:
             bet_text.text.setPlainText('')
+
+    def config_matches(self):
+        pass
+
+    def config_flags(self):
+        pass
 
     # noinspection PyMethodMayBeStatic
     def set_names(self, name_array):
