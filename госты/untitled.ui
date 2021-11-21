@@ -6508,9 +6508,9 @@
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="Flags_Button">
+      <widget class="QPushButton" name="Teams_Button">
        <property name="text">
-        <string>Настроить флаги</string>
+        <string>Изменить команды</string>
        </property>
       </widget>
      </item>

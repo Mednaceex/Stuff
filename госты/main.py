@@ -1,11 +1,12 @@
 from PyQt5 import QtWidgets
 from modules.window import Ui_MainWindow
+from modules.matches import Ui_Dialog
 import sys
 
 none = ('xx', 'хх', 'ХХ', 'XX', '__', '--', '_', '//', '/', '', 'None')
 n = 10  # количество матчей в госте
 player_count = 20
-seps = (':', '-', '—', '-:-')
+seps = ('-:-', '—:—', '-', '—')
 numbers = ('1', '2', '3', '4', '5', '6', '7', '8', '9', '0')
 end_symbol = '//'
 
@@ -166,8 +167,10 @@ def find_bet(text: str):
     Каждый элемент возвращаемого массива - список из 2 чисел - ставок на 1 и 2 команды
     """
     array = []
+    for string in seps:
+        text = text.replace(string, ':')
     for i, character in enumerate(text):
-        if character in seps and 0 < i < len(text)-1:
+        if character == ':' and 0 < i < len(text)-1:
             if text[i-1] in numbers and text[i+1] in numbers:
                 (bet1, bet2) = ('', '')
                 (left, right) = (1, 1)
@@ -242,6 +245,7 @@ class Window(QtWidgets.QMainWindow):
         super(Window, self).__init__()
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
+        self.matches = Matches()
         self.bet_texts = []
         self.score = []
         with open('flags.txt', 'r') as flags:
@@ -250,7 +254,7 @@ class Window(QtWidgets.QMainWindow):
         self.open_saves()
 
         self.ui.Matches_Button.clicked.connect(self.config_matches)
-        self.ui.Flags_Button.clicked.connect(self.config_flags)
+        self.ui.Teams_Button.clicked.connect(self.config_teams)
         self.ui.Save_Button.clicked.connect(self.save)
         self.ui.Count_Button.clicked.connect(self.count)
         self.ui.Reset_Button.clicked.connect(self.clear)
@@ -276,13 +280,14 @@ class Window(QtWidgets.QMainWindow):
             if bets_array is not None:
                 get_goals(bet_text.name, bets_array, self.score, self.betters)
             else:
-                print('error')
+                print('Неправильный гост:', bet_text.name)
 
         with open('output.txt', 'w+') as output:
             with open('matches.txt', 'r') as matches:
                 text = matches.readlines()
                 for line in text:
-                    get_matches(line, output, self.betters)
+                    if line != '\n':
+                        get_matches(line, output, self.betters)
 
     def clear(self):
         self.clear_scores()
@@ -290,9 +295,9 @@ class Window(QtWidgets.QMainWindow):
             bet_text.text.setPlainText('')
 
     def config_matches(self):
-        pass
+        self.matches.show()
 
-    def config_flags(self):
+    def config_teams(self):
         pass
 
     # noinspection PyMethodMayBeStatic
@@ -381,6 +386,56 @@ class Window(QtWidgets.QMainWindow):
             self.read_scores(score_array)
         else:
             print(len(score_array))
+
+
+class Matches(QtWidgets.QDialog):
+    def __init__(self):
+        super(Matches, self).__init__()
+        self.ui = Ui_Dialog()
+        self.ui.setupUi(self)
+        self.config_teams(self.read_teams())
+        self.set_names()
+        self.ui.buttonBox.accepted.connect(self.save)
+
+    def save(self):
+        self.save_matches('matches.txt')
+
+    def save_matches(self, file):
+        text = ''
+        for i in range(int(player_count / 2)):
+            name = [''] * 2
+            for j in range(2):
+                exec(f'name[{j}] = self.ui.Team_{i + 1}_{j + 1}.currentText()')
+            if text != '':
+                text += '\n'
+            text += name[0] + ' - ' + name[1]
+        with open(file, 'w') as matches:
+            print(text, file=matches, end='')
+
+    def read_teams(self):
+        names = []
+        with open('flags.txt', 'r') as flags:
+            text = flags.readlines()
+            for line in text:
+                array = split(line, ' - ')
+                names.append(array[0])
+        return names
+
+    def config_teams(self, names):
+        for i in range(int(player_count / 2)):
+            for j in range(2):
+                exec(f'self.ui.Team_{i + 1}_{j + 1}.addItems(names)')
+
+    def set_names(self):
+        with open('matches.txt', 'r') as matches:
+            text = matches.readlines()
+            for i, line in enumerate(text):
+                if i < int(player_count / 2):
+                    match = split(line, ' - ')
+                    index = [0] * 2
+                    for j in range(2):
+                        exec(f'index[{j}] = self.ui.Team_{i + 1}_{j + 1}.findText(match[{j}])')
+                        exec(f'self.ui.Team_{i + 1}_{j + 1}.setCurrentIndex(index[{j}])')
 
 
 def main():
