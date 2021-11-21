@@ -105,20 +105,6 @@ def get_names(betters_array):
     return array
 
 
-def get_scores(line):
-    """
-    Создаёт и возвращает список счетов матчей из данной строки
-    (в строке счета матчей должны быть представлены двузначными числами, разделёнными пробелом)
-    """
-    score_list = split(line, ' ')
-    scores = ['None'] * n
-    for i, elem in enumerate(score_list):
-        if elem not in none:
-            for j in range(2):
-                scores[i] = [int(elem[0]), int(elem[1])]
-    return scores
-
-
 def get_goals(name, bets_list, scores_list, betters_list):
     """
     Рассчитывает количество забитых игроком голов
@@ -263,7 +249,7 @@ class Window(QtWidgets.QMainWindow):
         with open('saved.txt', 'w'):
             pass
         with open('saved.txt', 'a') as saved:
-            print(self.ui.score_line.text(), file=saved)
+            print(self.save_scores(), file=saved)
             for bet_text in self.bet_texts:
                 text = bet_text.text.toPlainText()
                 print(bet_text.name, file=saved)
@@ -274,7 +260,7 @@ class Window(QtWidgets.QMainWindow):
         with open('saved.txt', 'w'):
             pass
         with open('saved.txt', 'a') as saved:
-            self.score = get_scores(self.ui.score_line.text())
+            self.score = self.get_scores()
             for bet_text in self.bet_texts:
                 text = bet_text.text.toPlainText()
                 missing = self.get_missing(bet_text)
@@ -294,7 +280,7 @@ class Window(QtWidgets.QMainWindow):
                     get_matches(line, output, self.betters)
 
     def clear(self):
-        self.ui.score_line.setText('')
+        self.clear_scores()
         for bet_text in self.bet_texts:
             bet_text.text.setPlainText('')
 
@@ -318,8 +304,7 @@ class Window(QtWidgets.QMainWindow):
             saves_text = []
             for i, line in enumerate(saves):
                 saves_text.append(get_rid_of_slash_n(saves[i]))
-            if len(saves) > 0:
-                self.ui.score_line.setText(saves[0])
+            self.open_scores(saves_text)
             i = 0
             while i < len(saves_text):
                 j = 1
@@ -334,6 +319,54 @@ class Window(QtWidgets.QMainWindow):
                         number = bet_text.number
                         exec(f'self.ui.Text_{number}.setPlainText(text)')
                 i += j
+
+    # noinspection PyMethodMayBeStatic
+    def get_scores(self):
+        """
+        Считывает счета матчей
+        """
+        scores = ['None'] * n
+        for i in range(n):
+            exec(f'scores[i] = [self.ui.Score_{i + 1}_1, self.ui.Score_{i + 1}_2]')
+        return scores
+
+    # noinspection PyMethodMayBeStatic
+    def save_scores(self):
+        text = ''
+        for i in range(n):
+            score = [''] * 2
+            for j in range(2):
+                exec(f'score[{j}] = self.ui.Score_{i + 1}_{j + 1}.text()')
+            text += score[0] + '\n' + score[1] + '\n'
+        text += end_symbol + '\n'
+        return text
+
+    # noinspection PyMethodMayBeStatic
+    def clear_scores(self):
+        empty = ''
+        for i in range(n):
+            for j in range(2):
+                exec(f'self.ui.Score_{i + 1}_{j + 1}.setText(empty)')
+
+    # noinspection PyMethodMayBeStatic
+    def read_scores(self, line_array):
+        if len(line_array) == n * 2:
+            for line in line_array:
+                for i in range(n):
+                    for j in range(2):
+                        exec(f'self.ui.Score_{i + 1}_{j + 1}.setText(get_rid_of_slash_n(line_array[2 * i + {j}]))')
+
+    def open_scores(self, text: list):
+        score_array = []
+        i = 0
+        if len(text) > 0:
+            while text[i] != end_symbol:
+                score_array.append(text[i])
+                i += 1
+        if len(score_array) == 2 * n:
+            self.read_scores(score_array)
+        else:
+            print(len(score_array))
 
 
 def main():
