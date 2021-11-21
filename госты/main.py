@@ -2,7 +2,7 @@ from PyQt5 import QtWidgets
 from modules.window import Ui_MainWindow
 import sys
 
-none = ('xx', 'хх', 'ХХ', 'XX', '__', '--', '_', '//', '/', 'None')
+none = ('xx', 'хх', 'ХХ', 'XX', '__', '--', '_', '//', '/', '', 'None')
 n = 10  # количество матчей в госте
 player_count = 20
 seps = (':', '-', '—', '-:-')
@@ -39,7 +39,15 @@ class Better:
         self.goals = value
 
 
-def check_bet(bet1, bet2, score1, score2):
+def check_ascii(string: str):
+    new_string = ''
+    for char in string:
+        if 0 < ord(char) < 127:
+            new_string += char
+    return new_string
+
+
+def check_bet(bet1: int, bet2: int, score1: int, score2: int):
     """
     Определяет и возвращает количество голов, забитых на конкретной ставке
 
@@ -123,7 +131,7 @@ def get_goals(name, bets_list, scores_list, betters_list):
             bets[i] = bet
     for i, bet in enumerate(bets):
         if bet != 'None' and scores_list[i] != 'None':
-            goals += check_bet(bet[0], bet[1], scores_list[i][0], scores_list[i][1])
+            goals += check_bet(int(bet[0]), int(bet[1]), int(scores_list[i][0]), int(scores_list[i][1]))
     for i in betters_list:
         if i.find(name):
             i.set_goals(goals)
@@ -155,7 +163,7 @@ def get_matches(line, output_file, betters_list):
 def find_bet(text: str):
     """
     Ищет ставки игрока в тексте госта, возвращает массив с ними
-    Каждый элемент возвращаемого массива - список из 2 чисел - ставок на 1 и 2 команды)
+    Каждый элемент возвращаемого массива - список из 2 чисел - ставок на 1 и 2 команды
     """
     array = []
     for i, character in enumerate(text):
@@ -251,27 +259,22 @@ class Window(QtWidgets.QMainWindow):
         with open('saved.txt', 'a') as saved:
             print(self.save_scores(), file=saved)
             for bet_text in self.bet_texts:
-                text = bet_text.text.toPlainText()
+                text = check_ascii(bet_text.text.toPlainText())
                 print(bet_text.name, file=saved)
                 print(text, file=saved)
                 print(end_symbol, file=saved)
 
     def count(self):
-        with open('saved.txt', 'w'):
-            pass
-        with open('saved.txt', 'a') as saved:
-            self.score = self.get_scores()
-            for bet_text in self.bet_texts:
-                text = bet_text.text.toPlainText()
-                missing = self.get_missing(bet_text)
-                bets_array = config_bets_array(text, missing)
-                if bets_array is None:
-                    print('error')
-                else:
-                    get_goals(bet_text.name, bets_array, self.score, self.betters)
-                print(bet_text.name, file=saved)
-                print(text, file=saved)
-                print(end_symbol, file=saved)
+        self.save()
+        self.score = self.get_scores()
+        for bet_text in self.bet_texts:
+            text = check_ascii(bet_text.text.toPlainText())
+            missing = self.get_missing(bet_text.name)
+            bets_array = config_bets_array(text, missing)
+            if bets_array is not None:
+                get_goals(bet_text.name, bets_array, self.score, self.betters)
+            else:
+                print('error')
 
         with open('output.txt', 'w+') as output:
             with open('matches.txt', 'r') as matches:
@@ -327,7 +330,10 @@ class Window(QtWidgets.QMainWindow):
         """
         scores = ['None'] * n
         for i in range(n):
-            exec(f'scores[i] = [self.ui.Score_{i + 1}_1, self.ui.Score_{i + 1}_2]')
+            exec(f'scores[{i}] = [check_ascii(self.ui.Score_{i + 1}_1.text()),'
+                 f'check_ascii(self.ui.Score_{i + 1}_2.text())]')
+            if scores[i][0] in none or scores[i][1] in none:
+                scores[i] = 'None'
         return scores
 
     # noinspection PyMethodMayBeStatic
@@ -336,7 +342,7 @@ class Window(QtWidgets.QMainWindow):
         for i in range(n):
             score = [''] * 2
             for j in range(2):
-                exec(f'score[{j}] = self.ui.Score_{i + 1}_{j + 1}.text()')
+                exec(f'score[{j}] = check_ascii(self.ui.Score_{i + 1}_{j + 1}.text())')
             text += score[0] + '\n' + score[1] + '\n'
         text += end_symbol + '\n'
         return text
@@ -370,7 +376,6 @@ class Window(QtWidgets.QMainWindow):
 
 
 def main():
-
     app = QtWidgets.QApplication([])
     application = Window()
     application.show()
