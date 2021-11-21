@@ -3,10 +3,11 @@ from modules.window import Ui_MainWindow
 import sys
 
 none = ('xx', 'хх', 'ХХ', 'XX', '__', '--', '_', '//', '/', 'None')
-n = 10
+n = 10  # количество матчей в госте
 player_count = 20
-seps = (':', '-', '—')
+seps = (':', '-', '—', '-:-')
 numbers = ('1', '2', '3', '4', '5', '6', '7', '8', '9', '0')
+end_symbol = '//'
 
 
 class Better:
@@ -59,7 +60,7 @@ def check_bet(bet1, bet2, score1, score2):
         return 0
 
 
-def split(string: str, sep: str):
+def split(string: str, sep=None):
     """
     Разделяет строку на список по данной разделительной строке, удаляет символы перехода на новую строку
 
@@ -67,10 +68,17 @@ def split(string: str, sep: str):
     :param sep: разделительная строка
     :return: список строк
     """
-    array = string.split(sep)
+    if sep is None:
+        array = [string]
+    else:
+        array = string.split(sep)
     for j, elem in enumerate(array):
-        array[j] = elem.replace('\n', '')
+        array[j] = get_rid_of_slash_n(elem)
     return array
+
+
+def get_rid_of_slash_n(string: str):
+    return string.replace('\n', '')
 
 
 def get_flags(file):
@@ -106,7 +114,8 @@ def get_scores(line):
     scores = ['None'] * n
     for i, elem in enumerate(score_list):
         if elem not in none:
-            scores[i] = elem
+            for j in range(2):
+                scores[i] = [int(elem[0]), int(elem[1])]
     return scores
 
 
@@ -128,7 +137,7 @@ def get_goals(name, bets_list, scores_list, betters_list):
             bets[i] = bet
     for i, bet in enumerate(bets):
         if bet != 'None' and scores_list[i] != 'None':
-            goals += check_bet(int(bet[0]), int(bet[1]), int(scores_list[i][0]), int(scores_list[i][1]))
+            goals += check_bet(bet[0], bet[1], scores_list[i][0], scores_list[i][1])
     for i in betters_list:
         if i.find(name):
             i.set_goals(goals)
@@ -216,10 +225,6 @@ def config_bets_array(text: str, missing: list):
         return array
 
 
-def get_missing(name):
-    return [False] * 10
-
-
 def print_name_error(text: str, file):
     """
     Выводит сообщение об ошибке в имени в файл и в консоль
@@ -232,9 +237,10 @@ def print_name_error(text: str, file):
 
 
 class BetText:
-    def __init__(self, name, text):
+    def __init__(self, name, text, number):
         self.name = name
         self.text = text
+        self.number = number
 
 
 class Window(QtWidgets.QMainWindow):
@@ -247,6 +253,7 @@ class Window(QtWidgets.QMainWindow):
         with open('flags.txt', 'r') as flags:
             self.betters = get_flags(flags)
         self.set_names(get_names(self.betters))
+        self.open_saves()
 
         self.ui.Save_Button.clicked.connect(self.save)
         self.ui.Count_Button.clicked.connect(self.count)
@@ -261,11 +268,7 @@ class Window(QtWidgets.QMainWindow):
                 text = bet_text.text.toPlainText()
                 print(bet_text.name, file=saved)
                 print(text, file=saved)
-                print('', file=saved)
-        if self.ui.Check_1_1.isChecked():
-            print('True')
-        else:
-            print('False')
+                print(end_symbol, file=saved)
 
     def count(self):
         with open('saved.txt', 'w'):
@@ -274,7 +277,7 @@ class Window(QtWidgets.QMainWindow):
             self.score = get_scores(self.ui.score_line.text())
             for bet_text in self.bet_texts:
                 text = bet_text.text.toPlainText()
-                missing = get_missing(bet_text)
+                missing = self.get_missing(bet_text)
                 bets_array = config_bets_array(text, missing)
                 if bets_array is None:
                     print('error')
@@ -282,7 +285,7 @@ class Window(QtWidgets.QMainWindow):
                     get_goals(bet_text.name, bets_array, self.score, self.betters)
                 print(bet_text.name, file=saved)
                 print(text, file=saved)
-                print('', file=saved)
+                print(end_symbol, file=saved)
 
         with open('output.txt', 'w+') as output:
             with open('matches.txt', 'r') as matches:
@@ -291,6 +294,7 @@ class Window(QtWidgets.QMainWindow):
                     get_matches(line, output, self.betters)
 
     def clear(self):
+        self.ui.score_line.setText('')
         for bet_text in self.bet_texts:
             bet_text.text.setPlainText('')
 
@@ -298,10 +302,41 @@ class Window(QtWidgets.QMainWindow):
     def set_names(self, name_array):
         for i, elem in enumerate(name_array):
             exec(f'self.ui.Name_{i + 1}.setText(elem)')
-            exec(f'self.bet_texts.append(BetText(elem, self.ui.Text_{i + 1}))')
+            exec(f'self.bet_texts.append(BetText(elem, self.ui.Text_{i + 1}, {i + 1}))')
+
+    def get_missing(self, name):
+        array = [True] * 10
+        for bet_text in self.bet_texts:
+            if bet_text.name == name:
+                for i in range(n):
+                    exec(f'array[{i}] = self.ui.Check_{bet_text.number}_{i + 1}.isChecked()')
+        return array
+
+    def open_saves(self):
+        with open('saved.txt', 'r') as saved:
+            saves = saved.readlines()
+            saves_text = []
+            for i, line in enumerate(saves):
+                saves_text.append(get_rid_of_slash_n(saves[i]))
+            if len(saves) > 0:
+                self.ui.score_line.setText(saves[0])
+            i = 0
+            while i < len(saves_text):
+                j = 1
+                for bet_text in self.bet_texts:
+                    if bet_text.name == saves_text[i]:
+                        text = ''
+                        while saves_text[i + j] != end_symbol:
+                            if text != '':
+                                text += '\n'
+                            text += saves_text[i + j]
+                            j += 1
+                        number = bet_text.number
+                        exec(f'self.ui.Text_{number}.setPlainText(text)')
+                i += j
 
 
-def main2():
+def main():
 
     app = QtWidgets.QApplication([])
     application = Window()
@@ -310,9 +345,5 @@ def main2():
     sys.exit(app.exec())
 
 
-def main3():
-    print(config_bets_array('1:2 ' * 10, [False] * 10))
-
-
 if __name__ == '__main__':
-    main2()
+    main()
