@@ -1,6 +1,8 @@
 from PyQt5 import QtWidgets, QtCore
 from modules.window import Ui_MainWindow
 from modules.matches import Ui_Dialog
+from modules.teams import Ui_Dialog as Ui_Dialog_2
+from modules.results import Ui_Dialog as Ui_Dialog_3
 import sys
 
 none = ('xx', 'хх', 'ХХ', 'XX', '__', '--', '_', '//', '/', '', 'None')
@@ -13,27 +15,16 @@ end_symbol = '//'
 
 
 class Better:
-    def __init__(self, name: str, flags=None, goals=0):
+    def __init__(self, name: str, goals=0):
         """
         Конструктор класса игроков
 
         :param name: название команды игрока
-        :param flags: список флагов (сокращённых названий команды)
         :param goals: количество голов, забитых игроком
         """
         self.name = name
         self.player_name = self.get_name()
         self.goals = goals
-        if flags is None:
-            self.flags = []
-        else:
-            self.flags = flags
-
-    def find(self, name):
-        """
-        Определяет, соответствует ли строка name названию команды игрока или одному из её флагов (сокращённых названиц)
-        """
-        return True if self.name == name or name in self.flags else False
 
     def set_goals(self, value):
         """
@@ -58,6 +49,20 @@ def check_ascii(string: str):
         if 0 < ord(char) < 127:
             new_string += char
     return new_string
+
+
+def sort_lines_alphabetical(string: str):
+    """
+    Сортирует строки в алфавитном порядке
+    """
+    array = split(string, '\n')
+    array.sort()
+    sorted_string = ''
+    for line in array:
+        if sorted_string != '':
+            sorted_string += '\n'
+        sorted_string += line
+    return sorted_string
 
 
 def check_bet(bet1: int, bet2: int, score1: int, score2: int):
@@ -102,9 +107,9 @@ def get_rid_of_slash_n(string: str):
     return string.replace('\n', '')
 
 
-def get_flags(file):
+def get_players(file):
     """
-    Считывает названия и флаги команд из файла, создаёт список объектов класса Better с этими данными
+    Считывает названия команд и имена тренеров из файла, создаёт список объектов класса Better с этими данными
 
     :param file: путь к файлу
     :return: список объектов класса Better
@@ -113,8 +118,7 @@ def get_flags(file):
     text = file.readlines()
     for line in text:
         a = split(line, ' - ')
-        flag_array = split(a[1], ', ')
-        b = Better(a[0], flag_array)
+        b = Better(a[0])
         array.append(b)
     return array
 
@@ -170,7 +174,7 @@ def get_matches(line, output_file, betters_list):
     name = [''] * 2
     for i in betters_list:
         for k in range(2):
-            if i.find(array[k]):
+            if i.name == array[k]:
                 g[k] = i.goals
                 name[k] = i.name
     for k in range(2):
@@ -268,12 +272,15 @@ class Window(QtWidgets.QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
         self.matches = Matches()
+        self.teams = Teams()
+        self.results = Results()
         self.bet_texts = []
         self.score = []
-        with open('flags.txt', 'r') as flags:
-            self.betters = get_flags(flags)
+        with open('players.txt', 'r') as players:
+            self.betters = get_players(players)
         self.set_names(get_names(self.betters), get_player_names(self.betters))
         self.open_saves()
+        self.setWindowTitle('Счётчик гостов')
 
         self.ui.Matches_Button.clicked.connect(self.config_matches)
         self.ui.Teams_Button.clicked.connect(self.config_teams)
@@ -319,6 +326,8 @@ class Window(QtWidgets.QMainWindow):
                     if line != '\n':
                         get_matches(line, output, self.betters)
 
+        self.results.show()
+
     def clear(self):
         self.clear_scores()
         self.clear_checks()
@@ -329,7 +338,7 @@ class Window(QtWidgets.QMainWindow):
         self.matches.show()
 
     def config_teams(self):
-        pass
+        self.teams.show()
 
     # noinspection PyMethodMayBeStatic
     def set_names(self, name_array, player_name_array):
@@ -441,6 +450,7 @@ class Matches(QtWidgets.QDialog):
         self.config_teams(self.read_teams())
         self.set_names()
         self.ui.buttonBox.accepted.connect(self.save)
+        self.setWindowTitle('Настройка матчей')
 
     def save(self):
         self.save_matches('matches.txt')
@@ -459,8 +469,8 @@ class Matches(QtWidgets.QDialog):
 
     def read_teams(self):
         names = []
-        with open('flags.txt', 'r') as flags:
-            text = flags.readlines()
+        with open('players.txt', 'r') as players:
+            text = players.readlines()
             for line in text:
                 array = split(line, ' - ')
                 names.append(array[0])
@@ -481,6 +491,67 @@ class Matches(QtWidgets.QDialog):
                     for j in range(2):
                         exec(f'index[{j}] = self.ui.Team_{i + 1}_{j + 1}.findText(match[{j}])')
                         exec(f'self.ui.Team_{i + 1}_{j + 1}.setCurrentIndex(index[{j}])')
+
+
+class Teams(QtWidgets.QDialog):
+    def __init__(self):
+        super(Teams, self).__init__()
+        self.ui = Ui_Dialog_2()
+        self.ui.setupUi(self)
+        self.set_names()
+        self.ui.buttonBox.accepted.connect(self.save)
+        self.setWindowTitle('Настройка команд')
+
+    def save(self):
+        text = self.save_players()
+        with open('players.txt', 'w') as players:
+            print(sort_lines_alphabetical(text), file=players, end='')
+
+    def save_players(self):
+        text = ''
+        for i in range(player_count):
+            name = [''] * 2
+            exec(f'name[{0}] += self.ui.Team_{i + 1}.text()')
+            exec(f'name[{1}] += self.ui.Name_{i + 1}.text()')
+            if text != '':
+                text += '\n'
+            text += name[0] + ' - ' + name[1]
+        return text
+
+    def set_names(self):
+        with open('players.txt', 'r') as players:
+            text = players.readlines()
+            for i in range(player_count):
+                names = split(text[i], ' - ')
+                exec(f'self.ui.Team_{i + 1}.setText(names[0])')
+                exec(f'self.ui.Name_{i + 1}.setText(names[1])')
+
+
+class Results(QtWidgets.QDialog):
+    def __init__(self):
+        super(Results, self).__init__()
+        self.ui = Ui_Dialog_3()
+        self.ui.setupUi(self)
+        self.print_results()
+        self.ui.Text.setReadOnly(True)
+        self.setWindowTitle('Результаты матчей')
+
+        self.ui.Copy_Button.clicked.connect(self.copy)
+        self.ui.Exit_Button.clicked.connect(self.close)
+
+    def copy(self):
+        text = self.ui.Text.toPlainText()
+        clipboard = QtWidgets.QApplication.clipboard()
+        if clipboard is not None:
+            clipboard.setText(text)
+
+    def print_results(self):
+        with open('output.txt', 'r') as results:
+            results_text = results.readlines()
+        text = ''
+        for line in results_text:
+            text += line
+        self.ui.Text.setPlainText(text)
 
 
 def main():
