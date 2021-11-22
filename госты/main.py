@@ -1,4 +1,4 @@
-from PyQt5 import QtWidgets
+from PyQt5 import QtWidgets, QtCore
 from modules.window import Ui_MainWindow
 from modules.matches import Ui_Dialog
 import sys
@@ -6,7 +6,8 @@ import sys
 none = ('xx', 'хх', 'ХХ', 'XX', '__', '--', '_', '//', '/', '', 'None')
 n = 10  # количество матчей в госте
 player_count = 20
-seps = ('-:-', '—:—', '-', '—')
+long_seps = ('-:-', '—:—')
+seps = ('-', '—')
 numbers = ('1', '2', '3', '4', '5', '6', '7', '8', '9', '0')
 end_symbol = '//'
 
@@ -21,6 +22,7 @@ class Better:
         :param goals: количество голов, забитых игроком
         """
         self.name = name
+        self.player_name = self.get_name()
         self.goals = goals
         if flags is None:
             self.flags = []
@@ -38,6 +40,16 @@ class Better:
         Изменяет количество голов игрока на заданное параметром value
         """
         self.goals = value
+
+    def get_name(self):
+        name = ''
+        with open('players.txt', 'r') as players:
+            text = players.readlines()
+            for line in text:
+                player = split(line, ' - ')
+                if player[0] == self.name:
+                    name = player[1]
+        return name
 
 
 def check_ascii(string: str):
@@ -114,6 +126,13 @@ def get_names(betters_array):
     return array
 
 
+def get_player_names(betters_array):
+    array = []
+    for better in betters_array:
+        array.append(better.name + ' (' + better.player_name + ')')
+    return array
+
+
 def get_goals(name, bets_list, scores_list, betters_list):
     """
     Рассчитывает количество забитых игроком голов
@@ -134,7 +153,7 @@ def get_goals(name, bets_list, scores_list, betters_list):
         if bet != 'None' and scores_list[i] != 'None':
             goals += check_bet(int(bet[0]), int(bet[1]), int(scores_list[i][0]), int(scores_list[i][1]))
     for i in betters_list:
-        if i.find(name):
+        if i.name == name:
             i.set_goals(goals)
 
 
@@ -167,6 +186,8 @@ def find_bet(text: str):
     Каждый элемент возвращаемого массива - список из 2 чисел - ставок на 1 и 2 команды
     """
     array = []
+    for string in long_seps:
+        text = text.replace(string, ':')
     for string in seps:
         text = text.replace(string, ':')
     for i, character in enumerate(text):
@@ -236,6 +257,7 @@ def print_name_error(text: str, file):
 class BetText:
     def __init__(self, name, text, number):
         self.name = name
+        self.player_name = name
         self.text = text
         self.number = number
 
@@ -250,7 +272,7 @@ class Window(QtWidgets.QMainWindow):
         self.score = []
         with open('flags.txt', 'r') as flags:
             self.betters = get_flags(flags)
-        self.set_names(get_names(self.betters))
+        self.set_names(get_names(self.betters), get_player_names(self.betters))
         self.open_saves()
 
         self.ui.Matches_Button.clicked.connect(self.config_matches)
@@ -260,15 +282,23 @@ class Window(QtWidgets.QMainWindow):
         self.ui.Reset_Button.clicked.connect(self.clear)
 
     def save(self):
-        with open('saved.txt', 'w'):
-            pass
-        with open('saved.txt', 'a') as saved:
+        with open('saved.txt', 'w') as saved:
             print(self.save_scores(), file=saved)
             for bet_text in self.bet_texts:
                 text = check_ascii(bet_text.text.toPlainText())
                 print(bet_text.name, file=saved)
                 print(text, file=saved)
                 print(end_symbol, file=saved)
+        with open('checks.txt', 'w') as checks:
+            check_box = [self.ui.Check_1_1]
+            for i in range(player_count):
+                for j in range(n):
+                    exec(f'check_box[{0}] = self.ui.Check_{i + 1}_{j + 1}')
+                    if check_box[0].isChecked():
+                        print(1, end='', file=checks)
+                    else:
+                        print(0, end='', file=checks)
+                print('', file=checks)
 
     def count(self):
         self.save()
@@ -291,6 +321,7 @@ class Window(QtWidgets.QMainWindow):
 
     def clear(self):
         self.clear_scores()
+        self.clear_checks()
         for bet_text in self.bet_texts:
             bet_text.text.setPlainText('')
 
@@ -301,9 +332,9 @@ class Window(QtWidgets.QMainWindow):
         pass
 
     # noinspection PyMethodMayBeStatic
-    def set_names(self, name_array):
+    def set_names(self, name_array, player_name_array):
         for i, elem in enumerate(name_array):
-            exec(f'self.ui.Name_{i + 1}.setText(elem)')
+            exec(f'self.ui.Name_{i + 1}.setText(player_name_array[{i}])')
             exec(f'self.bet_texts.append(BetText(elem, self.ui.Text_{i + 1}, {i + 1}))')
 
     def get_missing(self, name):
@@ -335,6 +366,15 @@ class Window(QtWidgets.QMainWindow):
                         number = bet_text.number
                         exec(f'self.ui.Text_{number}.setPlainText(text)')
                 i += j
+        self.open_checks()
+
+    def open_checks(self):
+        with open('checks.txt', 'r') as checks:
+            text = checks.readlines()
+            for i in range(player_count):
+                for j in range(n):
+                    if text[i][j] == '1':
+                        exec(f'self.ui.Check_{i + 1}_{j + 1}.setCheckState(QtCore.Qt.Checked)')
 
     # noinspection PyMethodMayBeStatic
     def get_scores(self):
@@ -366,6 +406,11 @@ class Window(QtWidgets.QMainWindow):
         for i in range(n):
             for j in range(2):
                 exec(f'self.ui.Score_{i + 1}_{j + 1}.setText(empty)')
+
+    def clear_checks(self):
+        for i in range(player_count):
+            for j in range(n):
+                exec(f'self.ui.Check_{i + 1}_{j + 1}.setCheckState(QtCore.Qt.Unchecked)')
 
     # noinspection PyMethodMayBeStatic
     def read_scores(self, line_array):
