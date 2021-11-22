@@ -310,6 +310,7 @@ class Window(QtWidgets.QMainWindow):
     def count(self):
         self.save()
         self.score = self.get_scores()
+        errors = []
         for bet_text in self.bet_texts:
             text = check_ascii(bet_text.text.toPlainText())
             missing = self.get_missing(bet_text.name)
@@ -317,7 +318,7 @@ class Window(QtWidgets.QMainWindow):
             if bets_array is not None:
                 get_goals(bet_text.name, bets_array, self.score, self.betters)
             else:
-                print('Неправильный гост:', bet_text.name)
+                errors.append(bet_text.name)
 
         with open('output.txt', 'w+') as output:
             with open('matches.txt', 'r') as matches:
@@ -326,6 +327,13 @@ class Window(QtWidgets.QMainWindow):
                     if line != '\n':
                         get_matches(line, output, self.betters)
 
+        with open('output.txt', 'a') as output:
+            if errors:
+                print('', file=output)
+                for name in errors:
+                    print('Ошибка в госте:', name, file=output)
+
+        self.results.print_results()
         self.results.show()
 
     def clear(self):
@@ -540,7 +548,13 @@ class Results(QtWidgets.QDialog):
         self.ui.Exit_Button.clicked.connect(self.close)
 
     def copy(self):
-        text = self.ui.Text.toPlainText()
+        full_text = self.ui.Text.toPlainText()
+        array = split(full_text, '\n')
+        text = ''
+        i = 0
+        while array[i] != '':
+            text += array[i] + '\n'
+            i += 1
         clipboard = QtWidgets.QApplication.clipboard()
         if clipboard is not None:
             clipboard.setText(text)

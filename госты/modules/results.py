@@ -14,9 +14,9 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Dialog(object):
     def setupUi(self, Dialog):
         Dialog.setObjectName("Dialog")
-        Dialog.resize(400, 300)
+        Dialog.resize(400, 389)
         self.horizontalLayoutWidget = QtWidgets.QWidget(Dialog)
-        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(100, 230, 201, 80))
+        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(100, 330, 201, 80))
         self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
         self.horizontalLayout = QtWidgets.QHBoxLayout(self.horizontalLayoutWidget)
         self.horizontalLayout.setContentsMargins(0, 0, 0, 0)
@@ -28,7 +28,7 @@ class Ui_Dialog(object):
         self.Exit_Button.setObjectName("Exit_Button")
         self.horizontalLayout.addWidget(self.Exit_Button)
         self.Text = QtWidgets.QTextEdit(Dialog)
-        self.Text.setGeometry(QtCore.QRect(10, 10, 381, 241))
+        self.Text.setGeometry(QtCore.QRect(10, 10, 381, 331))
         self.Text.setObjectName("Text")
 
         self.retranslateUi(Dialog)
