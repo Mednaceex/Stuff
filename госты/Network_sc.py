@@ -112,6 +112,8 @@ class OurNeuralNetwork:
         y_preds = np.apply_along_axis(self.feedforward, 1, data)
         loss = mse_loss(all_y_trues, y_preds)
         print("Epoch %d loss: %.3f" % (epoch, loss))
+        c = d_L_d_ypred * d_ypred_d_w5 * 10 ** 9
+        print(c)
 
 # Определим набор данных
 data = np.array([
