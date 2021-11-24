@@ -137,12 +137,14 @@ class NeuralNetwork:
                 d_L_d_b = [[0] * self.neuron_count] * self.layer_count
                 # Нейрон o1
 
+                h = self.feedforward_to_layer(len(self.layers) - 1, x)
+                j = self.feedforward_to_layer(len(self.layers) - 2, x)
                 d_L_d_w = [[[d * self.output_neuron[0] * Sigmoid.deriv(sum_o1) * x[0] * Sigmoid.deriv(sum_h1),
                              d * self.output_neuron[0] * Sigmoid.deriv(sum_o1) * x[1] * Sigmoid.deriv(sum_h1)],
                             [d * self.output_neuron[1] * Sigmoid.deriv(sum_o1) * x[0] * Sigmoid.deriv(sum_h2),
                              d * self.output_neuron[1] * Sigmoid.deriv(sum_o1) * x[1] * Sigmoid.deriv(sum_h2)]],
-                           [[d * h1 * Sigmoid.deriv(sum_o1),
-                            d * h2 * Sigmoid.deriv(sum_o1)]]]
+                           [[d * self.output_neuron.derivative(h) * h[0],
+                            d * self.output_neuron.derivative(h) * h[1]]]]
                 d_L_d_b = [[d * self.output_neuron[0] * Sigmoid.deriv(sum_o1) * Sigmoid.deriv(sum_h1),
                             d * self.output_neuron[1] * Sigmoid.deriv(sum_o1) * Sigmoid.deriv(sum_h2)],
                            [d * Sigmoid.deriv(sum_o1)]]
