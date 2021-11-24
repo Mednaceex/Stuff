@@ -57,6 +57,9 @@ class Layer:
     def __getitem__(self, item):
         return self.neurons_list[item]
 
+    def __len__(self):
+        return len(self.neurons_list)
+
     def feedforward(self, x: list):
         output = []
         for neuron in self.neurons_list:
@@ -97,6 +100,13 @@ class NeuralNetwork:
             array = layer.feedforward(array)
         return array[0]
 
+    def feedforward_to_layer(self, layer_index, x):
+        # x is a numpy array with 2 elements
+        array = np.array(x)
+        for layer in self.layers[:layer_index]:
+            array = layer.feedforward(array)
+        return array
+
     def train(self, data, all_y_trues):
         """
         - data - массив numpy (n x 2) numpy, n = к-во наблюдений в наборе.
@@ -109,30 +119,36 @@ class NeuralNetwork:
         for epoch in range(epochs):
             for x, y_true in zip(data, all_y_trues):
                 # --- Прямой проход (эти значения нам понадобятся позже)
-                sum_h1 = self.layers[0][0].sum(x)
-                h1 = self.layers[0][0].function(x)
-
-                sum_h2 = self.layers[0][1].sum(x)
-                h2 = self.layers[0][1].function(x)
-
-                sum_o1 = self.output_neuron.sum(self.layers[0].feedforward(x))
-                o1 = self.output_neuron.function(self.layers[0].feedforward(x))
-                y_pred = o1
+                y_pred = self.feedforward(x)
 
                 # --- Считаем частные производные.
                 # --- Имена: d_L_d_w1 = "частная производная L по w1"
                 d = 2 * (y_pred - y_true)
 
+                d_L_d_h = [[[0] * self.weight_count] * self.neuron_count] * self.layer_count
                 d_L_d_w = [[[0] * self.weight_count] * self.neuron_count] * self.layer_count
                 d_L_d_b = [[0] * self.neuron_count] * self.layer_count
                 # Нейрон o1
 
                 for layer_index, layer in enumerate(self.layers):
                     length = len(self.layers)
+                    h = self.feedforward_to_layer(layer_index, x)
                     if layer_index == length - 1:
                         for neuron_index, neuron in enumerate(layer):
                             for index, weight in enumerate(neuron):
-                                d_L_d_w[layer_index][neuron_index][index] = d * h0 * neuron.derivative()
+                                d_L_d_h[layer_index][neuron_index][index] = d * neuron.derivative(h) * weight
+                                d_L_d_w[layer_index][neuron_index][index] = d * neuron.derivative(h) * h[index]
+                            d_L_d_b[layer_index][neuron_index] = d * neuron.derivative(h)
+                    else:
+                        for neuron_index, neuron in enumerate(layer):
+                            for index, weight in enumerate(neuron):
+                                dldh = 0
+                                for i, past_neuron in enumerate(self.layers[layer_index + 1]):
+                                    dldh += d_L_d_w[layer_index + 1][i][neuron_index]
+                                d_L_d_h[layer_index][neuron_index][index] = dldh
+                                d_L_d_w[layer_index][neuron_index][index] = dldh * neuron.derivative(h) * h[index]
+                            d_L_d_b[layer_index][neuron_index] = d * neuron.derivative(h)
+
 
                 # --- Обновляем веса и пороги
                 # Нейрон h1
