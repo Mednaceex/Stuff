@@ -1,19 +1,3 @@
-import numpy as np
-
-
-def sigmoid(x):
-  # Сигмоидная функция активации: f(x) = 1 / (1 + e^(-x))
-  return 1 / (1 + np.exp(-x))
-
-def deriv_sigmoid(x):
-  # Производная сигмоиды: f'(x) = f(x) * (1 - f(x))
-  fx = sigmoid(x)
-  return fx * (1 - fx)
-
-def mse_loss(y_true, y_pred):
-  # y_true и y_pred - массивы numpy одинаковой длины.
-  return ((y_true - y_pred) ** 2).mean()
-
 class OurNeuralNetwork:
   '''
   Нейронная сеть с:
@@ -54,7 +38,7 @@ class OurNeuralNetwork:
       Элементы all_y_trues соответствуют наблюдениям в data.
     '''
     learn_rate = 0.1
-    epochs = 1000 # сколько раз пройти по всему набору данных
+    epochs = 1000  # сколько раз пройти по всему набору данных
 
     for epoch in range(epochs):
       for x, y_true in zip(data, all_y_trues):
@@ -90,48 +74,3 @@ class OurNeuralNetwork:
         d_h2_d_w3 = x[0] * deriv_sigmoid(sum_h2)
         d_h2_d_w4 = x[1] * deriv_sigmoid(sum_h2)
         d_h2_d_b2 = deriv_sigmoid(sum_h2)
-
-        # --- Обновляем веса и пороги
-        # Нейрон h1
-        self.w1 -= learn_rate * d_L_d_ypred * d_ypred_d_h1 * d_h1_d_w1
-        self.w2 -= learn_rate * d_L_d_ypred * d_ypred_d_h1 * d_h1_d_w2
-        self.b1 -= learn_rate * d_L_d_ypred * d_ypred_d_h1 * d_h1_d_b1
-
-        # Нейрон h2
-        self.w3 -= learn_rate * d_L_d_ypred * d_ypred_d_h2 * d_h2_d_w3
-        self.w4 -= learn_rate * d_L_d_ypred * d_ypred_d_h2 * d_h2_d_w4
-        self.b2 -= learn_rate * d_L_d_ypred * d_ypred_d_h2 * d_h2_d_b2
-
-        # Нейрон o1
-        self.w5 -= learn_rate * d_L_d_ypred * d_ypred_d_w5
-        self.w6 -= learn_rate * d_L_d_ypred * d_ypred_d_w6
-        self.b3 -= learn_rate * d_L_d_ypred * d_ypred_d_b3
-
-      # --- Считаем полные потери в конце каждой эпохи
-      if epoch % 10 == 0:
-        y_preds = np.apply_along_axis(self.feedforward, 1, data)
-        loss = mse_loss(all_y_trues, y_preds)
-        print("Epoch %d loss: %.3f" % (epoch, loss))
-
-# Определим набор данных
-data = np.array([
-  [-2, -1],  # Алиса
-  [25, 6],   # Боб
-  [17, 4],   # Чарли
-  [-15, -6], # Диана
-])
-all_y_trues = np.array([
-  1, # Алиса
-  0, # Боб
-  0, # Чарли
-  1, # Диана
-])
-
-aboba = [[60, 20], [12, 10], [-1, -2], [-2, -3]]
-# Обучаем нашу нейронную сеть!
-network = OurNeuralNetwork()
-network.train(data, all_y_trues)
-print(network.feedforward(aboba[0]))
-print(network.feedforward(aboba[1]))
-print(network.feedforward(aboba[2]))
-print(network.feedforward(aboba[3]))

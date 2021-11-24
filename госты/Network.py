@@ -124,34 +124,28 @@ class NeuralNetwork:
                 # --- Считаем частные производные.
                 # --- Имена: d_L_d_w1 = "частная производная L по w1"
                 d = 2 * (y_pred - y_true)
+                sum_h1 = self.layers[0][0][0] * x[0] + self.layers[0][0][1] * x[1] + self.layers[0][0].bias
+                h1 = Sigmoid.sigmoid(sum_h1)
+
+                sum_h2 = self.layers[0][1][0] * x[0] + self.layers[0][1][1] * x[1] + self.layers[0][1].bias
+                h2 = Sigmoid.sigmoid(sum_h2)
+
+                sum_o1 = self.output_neuron[0] * h1 + self.output_neuron[1] * h2 + self.output_neuron.bias
 
                 d_L_d_h = [[[0] * self.weight_count] * self.neuron_count] * self.layer_count
                 d_L_d_w = [[[0] * self.weight_count] * self.neuron_count] * self.layer_count
                 d_L_d_b = [[0] * self.neuron_count] * self.layer_count
                 # Нейрон o1
 
-                for layer_index, layer in enumerate(self.layers):
-                    length = len(self.layers)
-                    if layer_index == length - 1:
-                        h = self.feedforward_to_layer(layer_index, x)
-                        for neuron_index, neuron in enumerate(layer):
-                            for index, weight in enumerate(neuron):
-                                d_L_d_h[layer_index][neuron_index][index] = d * neuron.derivative(h) * weight
-                                d_L_d_w[layer_index][neuron_index][index] = d * neuron.derivative(h) * h[index]
-                            d_L_d_b[layer_index][neuron_index] = d * neuron.derivative(h)
-                    else:
-                        h = self.feedforward_to_layer(layer_index, x)
-                        for neuron_index, neuron in enumerate(layer):
-                            for index, weight in enumerate(neuron):
-                                dldh = 0
-                                for i, past_neuron in enumerate(self.layers[layer_index + 1]):
-                                    dldh += d_L_d_h[layer_index + 1][i][neuron_index] * weight * neuron.derivative(h)
-                                d_L_d_h[layer_index][neuron_index][index] = dldh
-                                dldw = 0
-                                for i, past_neuron in enumerate(self.layers[layer_index + 1]):
-                                    dldw += d_L_d_h[layer_index + 1][i][neuron_index] * h[index] * neuron.derivative(h)
-                                d_L_d_w[layer_index][neuron_index][index] = dldw
-                            d_L_d_b[layer_index][neuron_index] = d * neuron.derivative(h)
+                d_L_d_w = [[[d * self.output_neuron[0] * Sigmoid.deriv(sum_o1) * x[0] * Sigmoid.deriv(sum_h1),
+                             d * self.output_neuron[0] * Sigmoid.deriv(sum_o1) * x[1] * Sigmoid.deriv(sum_h1)],
+                            [d * self.output_neuron[1] * Sigmoid.deriv(sum_o1) * x[0] * Sigmoid.deriv(sum_h2),
+                             d * self.output_neuron[1] * Sigmoid.deriv(sum_o1) * x[1] * Sigmoid.deriv(sum_h2)]],
+                           [[d * h1 * Sigmoid.deriv(sum_o1),
+                            d * h2 * Sigmoid.deriv(sum_o1)]]]
+                d_L_d_b = [[d * self.output_neuron[0] * Sigmoid.deriv(sum_o1) * Sigmoid.deriv(sum_h1),
+                            d * self.output_neuron[1] * Sigmoid.deriv(sum_o1) * Sigmoid.deriv(sum_h2)],
+                           [d * Sigmoid.deriv(sum_o1)]]
 
                 # --- Обновляем веса и пороги
                 # Нейрон h1
@@ -166,6 +160,7 @@ class NeuralNetwork:
                 y_preds = np.apply_along_axis(self.feedforward, 1, data)
                 loss = mse_loss(all_y_trues, y_preds)
                 print("Epoch %d loss: %.3f" % (epoch, loss))
+
 
 
 # Определим набор данных
