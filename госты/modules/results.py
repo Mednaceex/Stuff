@@ -27,8 +27,11 @@ class Ui_Dialog(object):
         self.Exit_Button = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.Exit_Button.setObjectName("Exit_Button")
         self.horizontalLayout.addWidget(self.Exit_Button)
-        self.Text = QtWidgets.QTextEdit(Dialog)
-        self.Text.setGeometry(QtCore.QRect(10, 10, 381, 331))
+        self.Errors = QtWidgets.QTextBrowser(Dialog)
+        self.Errors.setGeometry(QtCore.QRect(10, 230, 381, 111))
+        self.Errors.setObjectName("Errors")
+        self.Text = QtWidgets.QTextBrowser(Dialog)
+        self.Text.setGeometry(QtCore.QRect(10, 10, 381, 201))
         self.Text.setObjectName("Text")
 
         self.retranslateUi(Dialog)

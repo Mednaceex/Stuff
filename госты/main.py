@@ -318,6 +318,9 @@ class Window(QtWidgets.QMainWindow):
             if bets_array is not None:
                 get_goals(bet_text.name, bets_array, self.score, self.betters)
             else:
+                for better in self.betters:
+                    if better.name == bet_text.name:
+                        better.goals = 0
                 errors.append(bet_text.name)
 
         with open('output.txt', 'w+') as output:
@@ -327,9 +330,8 @@ class Window(QtWidgets.QMainWindow):
                     if line != '\n':
                         get_matches(line, output, self.betters)
 
-        with open('output.txt', 'a') as output:
+        with open('errors.txt', 'w') as output:
             if errors:
-                print('', file=output)
                 for name in errors:
                     print('Ошибка в госте:', name, file=output)
 
@@ -541,20 +543,13 @@ class Results(QtWidgets.QDialog):
         self.ui = Ui_Dialog_3()
         self.ui.setupUi(self)
         self.print_results()
-        self.ui.Text.setReadOnly(True)
         self.setWindowTitle('Результаты матчей')
 
         self.ui.Copy_Button.clicked.connect(self.copy)
         self.ui.Exit_Button.clicked.connect(self.close)
 
     def copy(self):
-        full_text = self.ui.Text.toPlainText()
-        array = split(full_text, '\n')
-        text = ''
-        i = 0
-        while array[i] != '':
-            text += array[i] + '\n'
-            i += 1
+        text = self.ui.Text.toPlainText()
         clipboard = QtWidgets.QApplication.clipboard()
         if clipboard is not None:
             clipboard.setText(text)
@@ -562,10 +557,16 @@ class Results(QtWidgets.QDialog):
     def print_results(self):
         with open('output.txt', 'r') as results:
             results_text = results.readlines()
+        with open('errors.txt', 'r') as errors:
+            errors_text = errors.readlines()
         text = ''
         for line in results_text:
             text += line
+        error_text = ''
+        for line in errors_text:
+            error_text += line
         self.ui.Text.setPlainText(text)
+        self.ui.Errors.setPlainText(error_text)
 
 
 def main():

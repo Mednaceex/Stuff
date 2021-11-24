@@ -39,13 +39,23 @@
     </item>
    </layout>
   </widget>
-  <widget class="QTextEdit" name="Text">
+  <widget class="QTextBrowser" name="Errors">
+   <property name="geometry">
+    <rect>
+     <x>10</x>
+     <y>230</y>
+     <width>381</width>
+     <height>111</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QTextBrowser" name="Text">
    <property name="geometry">
     <rect>
      <x>10</x>
      <y>10</y>
      <width>381</width>
-     <height>331</height>
+     <height>201</height>
     </rect>
    </property>
   </widget>
